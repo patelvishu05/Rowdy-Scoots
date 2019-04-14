@@ -3,7 +3,8 @@ import got from 'got';
 import './App.css';
 import mapboxgl from 'mapbox-gl'
 import MapboxDirections from '@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions'
-import { default as along } from '@turf/along'
+import { lineString, point, along, pointToLineDistance } from '@turf/turf'
+import TinyQueue from 'tinyqueue';
 
 mapboxgl.accessToken = 'pk.eyJ1Ijoia3JlM2QiLCJhIjoiY2p1ZnhpNzBiMGZzeDN5cGl4eXNqd2F5NiJ9.mKFC_TR6CyOPC6j_PaAOWw';
 
@@ -94,7 +95,8 @@ class App extends Component {
 			Cookie: `_limebike-web_session=${session}; path=/; secure; HttpOnly`
 		};
 
-		this.getObjects({ lat: lat, lng: lng }, { headers: h }).then((result) => {
+		var p = this.getObjects({ lat: lat, lng: lng }, { headers: h });
+		p.then((result) => {
 			var body = result.body;
 			var scooters = body.data.attributes.bikes;
 			for (var i = 0; i < scooters.length; ++i) {
@@ -103,9 +105,11 @@ class App extends Component {
 			}
 			this.addScootersToMap();
 		});
+		return p;
 	}
 
 	getScootersAlongLine(line) {
+		var proms = [];
 		var options = {units: 'meters'};
 		var last = null;
 		for (var i = 0; i < 1000000000; i += 2500) {
@@ -113,8 +117,42 @@ class App extends Component {
 			if (JSON.stringify(a) == last) break;
 			last = JSON.stringify(a);
 			var crd = a.geometry.coordinates;
-			this.getScooters(crd[1], crd[0]);
+			var p = this.getScooters(crd[1], crd[0]);
+			proms.push(p);
 		}
+		return Promise.all(proms);
+	}
+
+	findRouteVia(a, b, c) {
+		const api = 'https://api.mapbox.com/directions/v5/mapbox';
+		var from = a.join('%2C');
+		var to = b.join('%2C');
+		var walk = got.get(`${api}/walking/${from}%3B${to}.json?geometries=polyline&access_token=${mapboxgl.accessToken}`);
+		from = b.join('%2C');
+		to = c.join('%2C');
+		var ride = got.get(`${api}/cycling/${from}%3B${to}.json?geometries=polyline&access_token=${mapboxgl.accessToken}`);
+		Promise.all([walk, ride]).then((args) => {
+			var walk = JSON.parse(args[0].body);
+			var ride = JSON.parse(args[1].body);
+			console.log(walk);
+			console.log(walk.routes[0].duration);
+			console.log(ride);
+			console.log(ride.routes[0].duration);
+		});
+	}
+
+	findNearestScooters(line) {
+		var queue = new TinyQueue([], function (a, b) {
+			return a.dist - b.dist;
+		});
+		for (var e in this.scooters) {
+			var s = this.scooters[e];
+			queue.push({ dist: pointToLineDistance(point(s.lnglat), line.geometry, {units: 'meters'}), key: e});
+		}
+		var closest = queue.pop();
+		var pt = this.scooters[closest.key].lnglat;
+		console.log(pt);
+		this.findRouteVia(window.directions.getOrigin().geometry.coordinates, pt, window.directions.getDestination().geometry.coordinates);
 	}
 
 	componentDidMount() {
@@ -127,17 +165,19 @@ class App extends Component {
 			zoom: 6
 		});
 		window.map = this.map;
-
-		this.getScooters(29.4231409, -98.5042806);
 		var directions = new MapboxDirections({
 			accessToken: mapboxgl.accessToken,
 			unit: 'metric',
+			alternatives: true,
 			profile: 'mapbox/walking'
 		});
 		directions.on('route', (rte) => {
 			var data = window.map.getSource('directions')._data.features[2];
-			this.getScootersAlongLine(data);
+			this.getScootersAlongLine(data).then(() => {
+				this.findNearestScooters(data);
+			});
 		});
+		window.directions = directions;
 		// add to your mapboxgl map
 		window.map.addControl(directions);
 	}
