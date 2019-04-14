@@ -8,7 +8,7 @@ import TinyQueue from 'tinyqueue';
 
 mapboxgl.accessToken = 'pk.eyJ1Ijoia3JlM2QiLCJhIjoiY2p1ZnhpNzBiMGZzeDN5cGl4eXNqd2F5NiJ9.mKFC_TR6CyOPC6j_PaAOWw';
 
-const py = 'http://johnson.kreed.org:8081'
+const py = 'https://kreed.org'
 
 class App extends Component {
 	addScootersToMap() {
