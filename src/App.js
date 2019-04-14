@@ -3,6 +3,7 @@ import got from 'got';
 import './App.css';
 import mapboxgl from 'mapbox-gl'
 import MapboxDirections from '@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions'
+import { default as along } from '@turf/along'
 
 mapboxgl.accessToken = 'pk.eyJ1Ijoia3JlM2QiLCJhIjoiY2p1ZnhpNzBiMGZzeDN5cGl4eXNqd2F5NiJ9.mKFC_TR6CyOPC6j_PaAOWw';
 
@@ -30,7 +31,6 @@ class App extends Component {
 		}
 
 		const bounds = boundsFromLatLng(lat, lng)
-		console.log(config);
 
 		return got.get(`${BASE_URL}/v1/views/map`, {
 			json: true,
@@ -105,6 +105,18 @@ class App extends Component {
 		});
 	}
 
+	getScootersAlongLine(line) {
+		var options = {units: 'meters'};
+		var last = null;
+		for (var i = 0; i < 1000000000; i += 2500) {
+			var a = along(line.geometry, i, options);
+			if (JSON.stringify(a) == last) break;
+			last = JSON.stringify(a);
+			var crd = a.geometry.coordinates;
+			this.getScooters(crd[1], crd[0]);
+		}
+	}
+
 	componentDidMount() {
 		this.scooters = {};
 		this.map = new mapboxgl.Map({
@@ -122,8 +134,9 @@ class App extends Component {
 			unit: 'metric',
 			profile: 'mapbox/walking'
 		});
-		directions.on('route', function(rte) {
-			console.log(window.map.getSource('directions')._data);
+		directions.on('route', (rte) => {
+			var data = window.map.getSource('directions')._data.features[2];
+			this.getScootersAlongLine(data);
 		});
 		// add to your mapboxgl map
 		window.map.addControl(directions);
