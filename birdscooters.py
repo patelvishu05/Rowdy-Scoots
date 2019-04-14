@@ -32,9 +32,6 @@ def hello(longitude=1, latitude=10):
     url2 = "https://api.bird.co/bird/nearby?latitude=%f&longitude=%f&radius=1000"%(lat,long)
     results = requests.get(url2, headers = headers2)
     if results.status_code == 200:
-        s = []
-        for scooter in results.json()["birds"]:
-            s.append(scooter["location"])
-        return json.dumps(s)
+        return json.dumps(results.json()["birds"])
     else:
         return latitude
