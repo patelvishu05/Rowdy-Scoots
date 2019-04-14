@@ -16,6 +16,7 @@ def hello(longitude=1, latitude=10):
     headers={'Device-id': 'e3958b93-585d-408e-9d00-9d0aaa84328b', 'Platform': 'ios', 'Content-type': 'application/json'}
     r = requests.post(url, data=json.dumps(body), headers=headers)
     token = 0 
+    print(r.text)
     if r.status_code == 200:
         token = r.json()["token"]
      
