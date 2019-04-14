@@ -8,48 +8,9 @@ import TinyQueue from 'tinyqueue';
 
 mapboxgl.accessToken = 'pk.eyJ1Ijoia3JlM2QiLCJhIjoiY2p1ZnhpNzBiMGZzeDN5cGl4eXNqd2F5NiJ9.mKFC_TR6CyOPC6j_PaAOWw';
 
-const BASE_URL = 'http://johnson.kreed.org:8000/api/rider'
 const py = 'http://johnson.kreed.org:8081'
-//const BASE_URL = 'https://web-production.lime.bike/api/rider'
-
-function boundsFromLatLng(lat, lng) {
-	const latMin = lat - 0.045
-	const latMax = lat + 0.045
-	const lngMin = lng - 0.045 / Math.cos((lat * Math.PI) / 180)
-	const lngMax = lng + 0.045 / Math.cos((lat * Math.PI) / 180)
-
-	return {
-		latMin,
-		lngMin,
-		latMax,
-		lngMax
-	}
-}
 
 class App extends Component {
-	getObjects({ lat, lng } = {}, config = {}) {
-		if (!lat || !lng) {
-			throw new Error('Missing lat/lng')
-		}
-
-		const bounds = boundsFromLatLng(lat, lng)
-
-		return got.get(`${BASE_URL}/v1/views/map`, {
-			json: true,
-			headers: config.headers,
-			query: {
-				ne_lat: bounds.latMax,
-				ne_lng: bounds.lngMax,
-				sw_lat: bounds.latMin,
-				sw_lng: bounds.lngMin,
-				user_latitude: lat,
-				user_longitude: lng,
-				zoom: 16
-			},
-			...config
-		})
-	}
-
 	addScootersToMap() {
 		var features = [];
 		for (var ele in this.scooters) {
@@ -89,16 +50,9 @@ class App extends Component {
 	}
 
 	getScooters(lat, lng) {
-		const token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX3Rva2VuIjoiRUZETEhINUEzM1o2WCIsImxvZ2luX2NvdW50Ijo2fQ.OcPQjtQllHVFOBjK-tUjXEXhtPRn73OjILLrW3PDK6A';
-		const session = 'QlB1ZDJySDN4OXBDOURZMEs4M0RrUVc1RmVjdXVOT1FzNG1kay9icHNKY2Z3R2I0L0dieXorKzRtUjdLeDloTTF4bEMvU0hSR0hQbDJMN2FkNkxrZ2N2TUlPV21VbVhGd0VBa21sZzdLUFQvQkltTHZoNUlodUtyTGRlWEgyNmRVUlZjVEhxVDJ6OVdvMkJyRmJiaGQ5NitLY2ZpRWVnUTJHTEk0Y3ZER2NDbnE4WkhZVDBqQS91RWdGdFdsRjdRSWVQRXBGWDRKelFCM3pLTnVjaUlvVEtFdTB1TUp6eTU2ajh4aE5tNks4N2QvNTJUd25oY3BPdVUxdTRFWWllN2d5eGQrUCs5TE5ES2c0MlQ2V3hmYlJ4eFNaaTdxdFNQLzhxNGl3RW91RDE2eUNjRkVoWUZUU0lSSzVJWXV2ckYvU2NDUFN5cWNGZ0tvVHh1aHNYK3FnPT0tLU1aRjRuVTl0WXhUc1kyQlg0VGhXdHc9PQ%3D%3D--958f92589231430b9af2c6a319d522b12d2c148e'
-		const h = {
-			Authorization: `Bearer ${token}`,
-			Cookie: `_limebike-web_session=${session}; path=/; secure; HttpOnly`
-		};
-
-		var lime = this.getObjects({ lat: lat, lng: lng }, { headers: h });
+		var lime = got.get(`${py}/lime/${lat}?longitude=${lng}`)
 		lime.then((result) => {
-			var body = result.body;
+			var body = JSON.parse(result.body);
 			console.log('lime', body);
 			var scooters = body.data.attributes.bikes;
 			if (!scooters) return;
@@ -142,7 +96,8 @@ class App extends Component {
 		var layerID = filterGroup.childElementCount;
 
 		var input = document.createElement('input');
-		input.type = 'checkbox';
+		input.type = 'radio';
+		input.name = 'route';
 		input.id = layerID;
 		input.checked = false;
 		input.routes = route;
@@ -163,6 +118,8 @@ class App extends Component {
 				//window.directions.actions.eventEmit('route', { route: route.walk, synth: true });
 			}
 		});
+
+		return input;
 	}
 
 	findRouteVia(a, b, c) {
@@ -224,7 +181,7 @@ class App extends Component {
 			while (grp.firstChild) {
 				grp.removeChild(grp.firstChild);
 			}
-			this.addRoute(rte[0].distance, rte[0].duration, { walk: rte })
+			this.addRoute(rte[0].distance, rte[0].duration, { walk: rte }).checked = true;
 			this.getScootersAlongLine(data).then(() => {
 				this.findNearestScooters(window.directions.getOrigin());
 			});
