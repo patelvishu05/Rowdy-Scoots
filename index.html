@@ -1,0 +1,46 @@
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="css/main.css">
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
+            integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+        <link rel="https://getbootstrap.com/docs/4.0/examples/cover/cover.css" rel="stylesheet">
+    </head>
+    <body>
+        <h1>Rowdy Scoots</h1>
+        <p>Welcome to the Rowdy Scoots amazing website !!</p>
+        <p lead> Rowdy scoots let you view the scooters around you, saving you the trouble to keep looking for them around where you.</p>
+        <!-- <p lead>&nbsp;	</p> -->
+        <div id="map"></div>
+        <form class="form-signin">
+            <div class="form-container">
+                <label for="form-loc">From</label>
+                <input type="text" class="form-control" id="from-loc" placeholder="From location">
+                <label for="dest-loc">To</label>
+                <input type="text" class="form-control" id="dest-loc" placeholder="Destination location">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+            <label id="data" aria-placeholder=""> </label>
+        </form>
+        <script type="text/javascript">
+            var map;
+            function initMap() {
+                var defaultBounds = new google.maps.LatLngBounds(
+                new google.maps.LatLng(29,-98),
+                new google.maps.LatLng(29,-98));
+
+                var options = { bounds: defaultBounds};
+                var fromLocation = document.getElementById('from-loc');
+                var autocomplete = new google.maps.places.Autocomplete(fromLocation,options)
+                
+                document.getElementById('data').innerHTML = autocomplete;
+                map = new google.maps.Map(document.getElementById('map'), {
+                    center: {lat: -34.397, lng: 150.644},
+                    zoom: 8
+                    }
+                );
+            }
+        </script>
+        <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyALp3BUmdmMP8zySNw4Xxpp7SP0GSHj3aU&libraries=places&callback=initMap" type="text/javascript" async defer></script>
+        <!-- <script src="autocomplete.js" type="text/javascript"></script> -->
+    </body>
+</html>
