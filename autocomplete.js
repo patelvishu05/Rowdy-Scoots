@@ -36,12 +36,11 @@ function jsonParser(url)
     var xmlhttp = new XMLHttpRequest();
     
     xmlhttp.onreadystatechange = function() {
-        console.log("heu")
     if (this.readyState == 4 && this.status == 200) 
     {
         var arr = JSON.parse(this.responseText);
         var out = arr.results[0].geometry.location.lat;
-        out += " " + arr.results[0].geometry.location.lng;
+        out += "," + arr.results[0].geometry.location.lng;
         document.getElementById("data").innerHTML = out;
         }
     };
